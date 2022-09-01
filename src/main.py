@@ -1,6 +1,5 @@
 import numpy as np
 import os
-import random
 import collections
 from os.path import dirname, abspath
 from copy import deepcopy
@@ -14,7 +13,7 @@ import yaml
 
 from run import run
 
-SETTINGS['CAPTURE_MODE'] = "fd" # set to "no" if you want to see stdout/stderr in console
+SETTINGS['CAPTURE_MODE'] = "fd"  # set to "no" if you want to see stdout/stderr in console
 logger = get_logger()
 
 ex = Experiment("pymarl")
@@ -23,6 +22,7 @@ ex.captured_out_filter = apply_backspaces_and_linefeeds
 
 results_path = os.path.join(dirname(dirname(abspath(__file__))), "results")
 # results_path = "/home/ubuntu/data"
+
 
 @ex.main
 def my_main(_run, _config, _log):
@@ -47,7 +47,7 @@ def _get_config(params, arg_name, subfolder):
     if config_name is not None:
         with open(os.path.join(os.path.dirname(__file__), "config", subfolder, "{}.yaml".format(config_name)), "r") as f:
             try:
-                config_dict = yaml.load(f)
+                config_dict = yaml.safe_load(f)
             except yaml.YAMLError as exc:
                 assert False, "{}.yaml error: {}".format(config_name, exc)
         return config_dict
@@ -78,10 +78,9 @@ if __name__ == '__main__':
     # Get the defaults from default.yaml
     with open(os.path.join(os.path.dirname(__file__), "config", "default.yaml"), "r") as f:
         try:
-            config_dict = yaml.load(f)
+            config_dict = yaml.safe_load(f)
         except yaml.YAMLError as exc:
-            assert False, "default.yaml error: {}".format(exc)
-
+            assert False, f"default.yaml error: {exc}"
     # Load algorithm and env base configs
     env_config = _get_config(params, "--env-config", "envs")
     alg_config = _get_config(params, "--config", "algs")
@@ -91,13 +90,12 @@ if __name__ == '__main__':
 
     try:
         map_name = config_dict["env_args"]["map_name"]
-    except:
-        map_name = config_dict["env_args"]["key"]    
-    
-    
+    except Exception:
+        map_name = config_dict["env_args"]["key"]
+
     # now add all the config to sacred
     ex.add_config(config_dict)
-    
+
     for param in params:
         if param.startswith("env_args.map_name"):
             map_name = param.split("=")[1]
@@ -113,4 +111,3 @@ if __name__ == '__main__':
     # ex.observers.append(MongoObserver())
 
     ex.run_commandline(params)
-
